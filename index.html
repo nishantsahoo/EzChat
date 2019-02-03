@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <title>IO Chat</title>
+  <style>
+    body{
+      margin: 20px;
+    }
+    #chat{
+      height: 500px;
+      margin-right: 10px 
+    }
+    #contentWrap{
+      display: none;
+    }
+    #chatWrap{
+      float: left;
+      border: 1px black solid;
+    }
+    #users{
+      margin: 10px;
+    }
+    .error{
+      color: red;
+    }
+    .whisper{
+      color: green;
+      font-style: italic;
+    }
+  </style>
+
+</head>
+<body>
+<div id="nickWrap">
+  <p>Enter a Username</p>
+  <p id="nickError"></p>
+  <form id="setNick">
+    <input size="35" id="nickname"></input>
+    <input type="submit"></input>
+  </form>
+</div>
+
+<div id="contentWrap">
+  <div id="chatWrap">
+    <div id="chat" class="container"></div>
+      <form id="send-message">
+      <input size="35" id="message" class="form-control" style="margin-top: 5px; margin-bottom: 5px;"></input>
+      <input type="submit" class="btn btn-success" style="float: right;"></input>
+      </form>
+    </div>
+    <div class="container" style="margin-top: 10px; float: left;">
+    <h2>Online Users:</h2>
+      <div id="users" ></div>
+    </div>
+  </div>
+  
+
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    jQuery(function ($) {
+      var socket = io.connect();
+      var $nickForm = $('#setNick');
+      var $nickError = $('#nickError');
+      var $nickBox = $('#nickname');
+      var $users = $('#users');
+      var $messageForm = $('#send-message');
+      var $messageBox = $('#message')
+      var $chat = $('#chat')
+
+      $nickForm.submit(function (e) {
+        e.preventDefault();
+        socket.emit('new user', $nickBox.val(), function (data) {
+          if(data){
+            $('#nickWrap').hide();
+            $('#contentWrap').show();
+          }
+          else{
+            $nickError.html('That username is already taken. Try again')
+          }
+        })
+        $nickBox.val('')
+      })
+
+      socket.on('usernames', function (data) {
+        var html = '';
+        
+        for(i = 0 ; i < data.length; i++){
+          html += data[i] + '<br/>'
+          
+        }
+        $users.html(html);
+      })
+
+      $messageForm.submit(function (e) {
+        e.preventDefault();
+        if($messageBox.val() == '')
+          $messageBox.val() == 'Please enter a messege'
+        else{
+          socket.emit('send message', $messageBox.val(), function () {
+            $chat.append('<span class="error"><b>'+data+'</span><br/>')
+          });
+          $messageBox.val('')
+        }
+      });
+
+      socket.on('new message', function (data) {
+        $chat.append('<b>'+data.nick+":"+'</b>'+data.msg + "<br/>")
+      })
+
+      socket.on('whisper', function (data) {
+        $chat.append('<span class="whisper"><b>'+ data.nick+':</b>'+ data.msg+'</span><br/>')
+      });
+
+    });
+  </script>
+</body>
+</html>
